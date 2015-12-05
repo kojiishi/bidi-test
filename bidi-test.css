@@ -1,0 +1,53 @@
+PA, PL, PR {
+  border: thin gray solid;
+  display: block;
+  white-space: pre;
+}
+
+PA {
+  unicode-bidi: plaintext;
+}
+
+PL {
+  direction: ltr;
+}
+
+PR {
+  direction: rtl;
+}
+
+LRE, RLE {
+  unicode-bidi: embed;
+}
+
+LRO, RLO {
+  unicode-bidi: bidi-override;
+}
+
+LRI, RLI {
+  unicode-bidi: isolate;
+}
+
+LRE {
+  direction: ltr;
+}
+
+RLE {
+  direction: rtl;
+}
+
+LRO {
+  direction: ltr;
+}
+
+RLO {
+  direction: rtl;
+}
+
+LRI {
+  direction: ltr;
+}
+
+RLI {
+  direction: rtl;
+}

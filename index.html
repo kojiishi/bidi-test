@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Bidi-test</title>
+<script src="bidi-test.js"></script>
+<link rel=stylesheet href="bidi-test.css">
+<style>
+#intro {
+  margin-left: 20ch;
+}
+
+#summary {
+  float: left;
+  width: 18ch;
+  position: absolute;
+  top: 2em;
+}
+
+#list {
+  clear: both;
+}
+
+.num {
+  text-align: right;
+}
+</style>
+<div id="intro">
+  <h1>Bidi-Test</h1>
+  <p>This page tests Unicode Bidirectional Algorithm
+    defined in <a href="http://unicode.org/reports/tr9/">UAX#9</a>
+    using <a href="BidiTest.txt">BidiTest.txt</a>.
+  <p>Some tests are not runnable, for the following resons.
+  <ol>
+    <li>Bidi embedding levels are not tested, beause the information is not available from JavaScript.
+    <li>Tests with unmatched pop (PDF, PDI) are ignored, because such unmaching does not occur in HTML.
+    <li>Tests with non-displayable characters are inconclusive, because such characters are not measurable from JavaScript.
+  </ol>
+</div>
+<div id=summary>
+  <div id=statuspanel></div>
+  <table id=results>
+    <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
+    <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
+    <tr><td>Remains</td><td id=remainspanel class=num></td></tr>
+    <tr><td>Pass</td><td id=passpanel class=num></td></tr>
+    <tr><td>Fail</td><td id=failpanel class=num></td></tr>
+    <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
+    <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
+  </table>
+</div>
+<div id=list>
+  <details>
+    <summary>Fail</summary>
+    <ol id="faillist"></ol>
+  </details>
+  <details>
+    <summary>Ignore</summary>
+    <ol id="ignorelist"></ol>
+  </details>
+  <details>
+    <summary>Inconclusive</summary>
+    <ol id="inconclusivelist"></ol>
+  </details>
+</div>
+<div id=container></div>
+<script>
+'use strict'
+var runner = new BidiTestRunner;
+var fails = [], ignores = [], inconclusives = [];
+runner.onFail = function (test) { fails.push(test); };
+runner.onIgnore = function (test) { ignores.push(test); };
+runner.onInconclusive = function (test) { inconclusives.push(test); };
+
+phase("Loading tests...");
+runner.loadUrl('BidiTest.txt', function (tests) {
+  loadedpanel.textContent = tests.length;
+  phase("Testing...", function () {
+    createTests(tests);
+  });
+});
+
+function createTests(tests) {
+  var block = document.createElement("div");
+  container.appendChild(block);
+  runner.create(tests.splice(0, 1000), block);
+  remainspanel.textContent = tests.length;
+  ignoredpanel.textContent = ignores.length;
+
+  //phase("Testing...", function () {
+    runTestsInContainer(block, tests);
+  //);
+}
+
+function runTestsInContainer(container, remaining) {
+  runner.run(container.children);
+  container.parentNode.removeChild(container);
+  passpanel.textContent = runner.pass;
+  failpanel.textContent = fails.length;
+  inconcolusivepanel.textContent = inconclusives.length;
+
+  if (remaining.length) {
+    phase("Testing...", function () {
+      createTests(remaining);
+    });
+    return;
+  }
+
+  phase("Creating result lists...", function () {
+    addResultsToList();
+    phase("Completed");
+  });
+}
+
+
+function addResultsToList() {
+  function add(list, tests) {
+    for (var test of tests) {
+      var item = document.createElement("li");
+      item.textContent = test.resultText();
+      list.appendChild(item);
+    }
+  }
+  add(faillist, fails);
+  add(ignorelist, ignores);
+  add(inconclusivelist, inconclusives);
+}
+
+function phase(text, func) {
+  //console.log(text);
+  statuspanel.textContent = text;
+  timepanel.textContent = Math.round(runner.elapsed() / 1000);
+
+  if (func)
+    setTimeout(func, 10);
+}
+</script>
