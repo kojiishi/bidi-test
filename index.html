@@ -40,8 +40,12 @@
 <div id="intro">
   <h1>Bidi-Test</h1>
   <p>This page tests Unicode Bidirectional Algorithm
-    defined in <a href="http://unicode.org/reports/tr9/">UAX#9</a>
-    using <a href="BidiTest.txt">BidiTest.txt</a>.
+    defined in <a href="http://unicode.org/reports/tr9/">UAX#9</a>.
+  <p>This test converts <a href="BidiTest.txt">BidiTest.txt</a>,
+    test cases from <a href="http://www.unicode.org/">Unicode, Inc.</a>,
+    to HTML and measures the layout result using
+    <a href="https://drafts.csswg.org/cssom-view/#dom-range-getboundingclientrect">Range.getBoundingClientRect()</a>
+    method.
   <p>Some tests are not runnable for the following resons.
   <ol>
     <li>Bidi embedding levels are not tested, beause the information is not available from JavaScript.
