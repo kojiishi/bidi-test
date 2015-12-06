@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <meta charset="utf-8">
 <title>Bidi-test</title>
 <script src="bidi-test.js"></script>
@@ -13,6 +13,10 @@
   width: 18ch;
   position: absolute;
   top: 2em;
+}
+
+#progress, #results {
+  width: 100%;
 }
 
 #list {
@@ -37,10 +41,10 @@
 </div>
 <div id=summary>
   <div id=statuspanel></div>
+  <progress id=progress></progress>
   <table id=results>
     <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
     <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
-    <tr><td>Remains</td><td id=remainspanel class=num></td></tr>
     <tr><td>Pass</td><td id=passpanel class=num></td></tr>
     <tr><td>Fail</td><td id=failpanel class=num></td></tr>
     <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
@@ -73,6 +77,8 @@ runner.onInconclusive = function (test) { inconclusives.push(test); };
 phase("Loading tests...");
 runner.loadUrl('BidiTest.txt', function (tests) {
   loadedpanel.textContent = tests.length;
+  progress.max = tests.length;
+  progress.value = 0;
   phase("Testing...", function () {
     createTests(tests);
   });
@@ -82,7 +88,7 @@ function createTests(tests) {
   var block = document.createElement("div");
   container.appendChild(block);
   runner.create(tests.splice(0, 1000), block);
-  remainspanel.textContent = tests.length;
+  progress.value = progress.max - tests.length;
   ignoredpanel.textContent = ignores.length;
 
   //phase("Testing...", function () {
@@ -115,7 +121,7 @@ function addResultsToList() {
   function add(list, tests) {
     for (var test of tests) {
       var item = document.createElement("li");
-      item.textContent = test.resultText();
+      item.textContent = test.result();
       list.appendChild(item);
     }
   }

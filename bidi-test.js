@@ -7,10 +7,10 @@ var BidiTest = (function () {
     this.bitset = bitset;
   };
   var proto = ctor.prototype;
-  ctor.paragraphs = [
-    { bit: 1, tagName: "PA" },
-    { bit: 2, tagName: "PL" },
-    { bit: 4, tagName: "PR" },
+  ctor.bitsets = [
+    { tagName: "PA" },
+    { tagName: "PL" },
+    { tagName: "PR" },
   ];
   proto.createElement = function (parent) {
     var html = this.html();
@@ -18,15 +18,21 @@ var BidiTest = (function () {
       return false;
     var doc = parent.ownerDocument;
     var self = this;
-    BidiTest.paragraphs.forEach(function (para) {
-      if (!(para.bit & self.bitset))
-        return;
-      var element = doc.createElement(para.tagName);
+    for (var i = 0, bits = this.bitset; i < BidiTest.bitsets.length; i++, bits >>= 1) {
+      if (!(bits & 1))
+        continue
+      var bitset = BidiTest.bitsets[i];
+      var child = new BidiTest(this.expect, this.input, undefined);
+      child.tagName = bitset.tagName;
+      var element = doc.createElement(bitset.tagName);
       element.innerHTML = html;
-      element.bidiTest = self;
+      element.bidiTest = child;
       parent.appendChild(element);
-    });
+    }
     return true;
+  };
+  proto.description = function () {
+    return '"' + this.input + '" (' + this.tagName + ')';
   };
   proto.html = function () {
     return BidiTest.toHtml(this.input);
@@ -98,18 +104,18 @@ var BidiTest = (function () {
     }
     return 1;
   };
-  proto.resultText = function () {
+  proto.result = function () {
     var actual = this.actual;
     if (!actual)
       return this.input;
     var expect = this.expect.reorder;
     if (actual.length != expect.length)
-      return "Length differ for '" + this.input + "': " + actual + " but expects " + expect;
+      return "Length differ for " + this.description() + ": " + actual + " but expects " + expect;
     for (var i = 0; i < actual.length; i++) {
       if (actual[i] != expect[i])
-        return "[" + i + "] differ for '" + this.input + "': " + actual + " but expects " + expect;
+        return "[" + i + "] differ for " + this.description() + ": " + actual + " but expects " + expect;
     }
-    return "Pass: " + this.input + " is " + actual + " (expects "+ expect + ")";
+    return "Pass: " + this.description() + " is " + actual + " (expects "+ expect + ")";
   }
   // Get visual order of charaters in a node.
   // <span dir=rtl>ABC</span> returns [2, 1, 0].
