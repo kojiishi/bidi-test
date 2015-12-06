@@ -1,18 +1,13 @@
 PA, PL, PR {
-  border: thin gray solid;
   display: block;
   white-space: pre;
 }
 
-PA {
-  unicode-bidi: plaintext;
-}
-
-PL {
+PL, LRE, LRO, LRI {
   direction: ltr;
 }
 
-PR {
+PR, RLE, RLO, RLI {
   direction: rtl;
 }
 
@@ -25,29 +20,15 @@ LRO, RLO {
 }
 
 LRI, RLI {
+  unicode-bidi: -moz-isolate;
+  unicode-bidi: -ms-isolate;
+  unicode-bidi: -webkit-isolate;
   unicode-bidi: isolate;
 }
 
-LRE {
-  direction: ltr;
-}
-
-RLE {
-  direction: rtl;
-}
-
-LRO {
-  direction: ltr;
-}
-
-RLO {
-  direction: rtl;
-}
-
-LRI {
-  direction: ltr;
-}
-
-RLI {
-  direction: rtl;
+PA, FSI {
+  unicode-bidi: -moz-plaintext;
+  unicode-bidi: -ms-plaintext;
+  unicode-bidi: -webkit-plaintext;
+  unicode-bidi: plaintext;
 }
