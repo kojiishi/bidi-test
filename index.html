@@ -5,18 +5,28 @@
 <link rel=stylesheet href="bidi-test.css">
 <style>
 #intro {
-  margin-left: 20ch;
+  padding-left: 20ch;
+  position: relative;
 }
 
 #summary {
   float: left;
   width: 18ch;
   position: absolute;
-  top: 2em;
+  left: 0;
+  top: 0;
 }
 
 #progress, #results {
   width: 100%;
+}
+
+#links {
+  position: absolute;
+  right: 0;
+  top: 0;
+  list-style: none;
+  margin: 0;
 }
 
 #list {
@@ -32,24 +42,27 @@
   <p>This page tests Unicode Bidirectional Algorithm
     defined in <a href="http://unicode.org/reports/tr9/">UAX#9</a>
     using <a href="BidiTest.txt">BidiTest.txt</a>.
-  <p>Some tests are not runnable, for the following resons.
+  <p>Some tests are not runnable for the following resons.
   <ol>
     <li>Bidi embedding levels are not tested, beause the information is not available from JavaScript.
     <li>Tests with unmatched pop (PDF, PDI) are ignored, because such unmaching does not occur in HTML.
     <li>Tests with non-displayable characters are inconclusive, because such characters are not measurable from JavaScript.
   </ol>
-</div>
-<div id=summary>
-  <div id=statuspanel></div>
-  <progress id=progress></progress>
-  <table id=results>
-    <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
-    <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
-    <tr><td>Pass</td><td id=passpanel class=num></td></tr>
-    <tr><td>Fail</td><td id=failpanel class=num></td></tr>
-    <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
-    <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
-  </table>
+  <div id=summary>
+    <div id=statuspanel></div>
+    <progress id=progress></progress>
+    <table id=results>
+      <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
+      <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
+      <tr><td>Pass</td><td id=passpanel class=num></td></tr>
+      <tr><td>Fail</td><td id=failpanel class=num></td></tr>
+      <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
+      <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
+    </table>
+  </div>
+  <ul id=links>
+    <li><a href="https://github.com/kojiishi/bidi-test/">github</a>
+  </ul>
 </div>
 <div id=list>
   <details>
