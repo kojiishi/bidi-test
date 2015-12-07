@@ -84,7 +84,8 @@
 </div>
 <div id=container></div>
 <script>
-'use strict'
+'use strict';
+
 var runner = new BidiTestRunner;
 var fails = [], ignores = [], inconclusives = [];
 runner.onFail = function (test) { fails.push(test); };
