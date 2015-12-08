@@ -50,7 +50,8 @@
   <ol>
     <li>Bidi embedding levels are not tested, beause the information is not available from JavaScript.
     <li>Tests with unmatched pop (PDF, PDI) are ignored, because such unmaching does not occur in HTML.
-    <li>Tests with non-displayable characters are inconclusive, because such characters are not measurable from JavaScript.
+    <li>Tests with single displyable character are ignored, because such tests are meaningless to test reoder.
+    <li>Tests with different length of expected and actual are inconclusive.
   </ol>
   <div id=summary>
     <div id=statuspanel></div>

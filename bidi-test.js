@@ -2,8 +2,8 @@
 
 (function (exports) {
   exports.BidiTest = (function () {
-    var ctor = function (expect, input, bitset) {
-      this.expect = expect;
+    var ctor = function (reorder, input, bitset) {
+      this.reorder = reorder;
       this.input = input;
       this.bitset = bitset;
     };
@@ -23,20 +23,27 @@
         if (!(bits & 1))
           continue
         var bitset = BidiTest.bitsets[i];
-        var child = new BidiTest(this.expect, this.input, undefined);
-        child.tagName = bitset.tagName;
-        var element = doc.createElement(bitset.tagName);
-        element.innerHTML = html;
-        element.bidiTest = child;
-        parent.appendChild(element);
+        var child = new BidiTestElement(this, bitset.tagName);
+        child.createElement(parent, doc, html);
       }
       return true;
     };
     proto.description = function () {
-      return '"' + this.input + '" (' + this.tagName + ')';
+      return '"' + this.input + '"';
     };
     proto.html = function () {
-      return BidiTest.toHtml(this.input);
+      this.indexOfSpacingCharacters = [];
+      return BidiTest.toHtml(this.input, this.indexOfSpacingCharacters);
+    };
+    proto.expectedReorder = function () {
+      if (this._expectedReorder)
+        return this._expectedReorder;
+      var reorder = BidiTest.removeNonSpacing(this.reorder.slice(), this.indexOfSpacingCharacters);
+      this._expectedReorder = BidiTest.makeSequene(reorder);
+      return this._expectedReorder;
+    };
+    proto.result = function () {
+      return this.input;
     };
     ctor.map = {
       "L": { html: "a" },
@@ -52,7 +59,7 @@
       "ON": { html: "=" },
       "NSM": { html: String.fromCharCode(0x05BF), nonSpacing: true }, // HEBREW POINT RAFE
       "AL": { html: String.fromCharCode(0x0608) }, // ARABIC RAY
-      "BN": { html: String.fromCharCode(0x00AD) }, // SOFT HYPHEN
+      "BN": { html: String.fromCharCode(0x00AD), nonSpacing: true }, // SOFT HYPHEN
       "LRE": { html: "<LRE>", close: "</LRE>", closeBy: "PDF" },
       "RLE": { html: "<RLE>", close: "</RLE>", closeBy: "PDF" },
       "LRO": { html: "<LRO>", close: "</LRO>", closeBy: "PDF" },
@@ -63,7 +70,7 @@
       "FSI": { html: "<FSI>", close: "</FSI>", closeBy: "PDI" },
       "PDI": { close: true },
     };
-    ctor.toHtml = function (input) {
+    ctor.toHtml = function (input, indexOfSpacingCharacters) {
       var items = input.split(" ");
       var results = [];
       var stack = [];
@@ -84,8 +91,11 @@
           results.push(stack.pop().close);
         } else {
           results.push(result.html);
-          if (!result.nonSpacing)
+          if (!result.nonSpacing) {
             spacing++;
+            if (indexOfSpacingCharacters)
+              indexOfSpacingCharacters[i] = true;
+          }
         }
       }
       if (spacing <= 1)
@@ -94,9 +104,46 @@
         results.push(stack.pop().close);
       return results.join("");
     };
+    ctor.removeNonSpacing = function (reorder, indexOfSpacingCharacters) {
+      for (var i = reorder.length - 1; i >= 0; i--) {
+        if (!indexOfSpacingCharacters[reorder[i]])
+          reorder.splice(i, 1);
+      }
+      return reorder;
+    };
+    // Make values of an int array seuquential without breaking the order.
+    // [5, 1, 3] returns  [2, 0, 1].
+    ctor.makeSequene = function (list) {
+      var values = [];
+      for (var i = 0; i < list.length; i++)
+        values[list[i]] = i;
+      for (var i = 0, value = 0; i < values.length; i++) {
+        if (values[i] !== undefined)
+          list[values[i]] = value++;
+      }
+      return list;
+    };
+    return ctor;
+  })();
+
+  exports.BidiTestElement = (function () {
+    var ctor = function (test, tagName) {
+      this.test = test;
+      this.tagName = tagName;
+    };
+    var proto = ctor.prototype;
+    proto.description = function () {
+      return this.test.description() + ' (' + this.tagName + ')';
+    };
+    proto.createElement = function (parent, doc, html) {
+      var element = doc.createElement(this.tagName);
+      element.innerHTML = html;
+      element.bidiTest = this;
+      parent.appendChild(element);
+    };
     proto.testElement = function (element) {
-      var actual = this.actual = BidiTest.visualOrder(element);
-      var expect = this.expect.reorder;
+      var actual = this.actual = BidiTestElement.visualOrder(element);
+      var expect = this.test.expectedReorder();
       if (actual.length != expect.length)
         return -1;
       for (var i = 0; i < actual.length; i++) {
@@ -108,15 +155,15 @@
     proto.result = function () {
       var actual = this.actual;
       if (!actual)
-        return this.input;
-      var expect = this.expect.reorder;
+        return this.test.input;
+        var expect = this.test.expectedReorder();
       if (actual.length != expect.length)
-        return "Length differ for " + this.description() + ": " + actual + " but expects " + expect;
+        return "Length differ for " + this.description() + ": " + actual + " but expects " + expect + " (" + this.test.reorder + ")";
       for (var i = 0; i < actual.length; i++) {
         if (actual[i] != expect[i])
           return "[" + i + "] differ for " + this.description() + ": " + actual + " but expects " + expect;
       }
-      return "Pass: " + this.description() + " is " + actual + " (expects "+ expect + ")";
+      return "Pass: " + this.test.description() + " is " + actual + " (expects "+ expect + ")";
     }
     // Get visual order of charaters in a node.
     // <span dir=rtl>ABC</span> returns [2, 1, 0].
@@ -148,20 +195,7 @@
       collectX(node, results, range, 0);
       results.sort(function (a, b) { return a.x > b.x ? 1 : -1; });
       results = results.map(function (r) { return r.index; });
-      BidiTest.makeSequene(results);
-      return results;
-    };
-    // Make values of an int array seuquential without breaking the order.
-    // [5, 1, 3] returns  [2, 0, 1].
-    ctor.makeSequene = function (list) {
-      var values = [];
-      for (var i = 0; i < list.length; i++)
-        values[list[i]] = i;
-      for (var i = 0, value = 0; i < values.length; i++) {
-        if (values[i] !== undefined)
-          list[values[i]] = value++;
-      }
-      return list;
+      return BidiTest.makeSequene(results);;
     };
     return ctor;
   })();
@@ -171,7 +205,6 @@
       this.lineNumber = 0;
       this.levels = null;
       this.reorder = null;
-      this.expect = null;
       this.tests = [];
     };
     var proto = ctor.prototype;
@@ -200,14 +233,11 @@
         var keyValue = line.slice(1).split(":", 2);
         if (keyValue[0] == "Levels") {
           this.levels = keyValue[1].trim().split(" ");
-          this.expect = null;
           return;
         }
         if (keyValue[0] == "Reorder") {
           this.reorder = keyValue[1].trim().split(" ")
             .map(function (i) { return parseInt(i); });
-          BidiTest.makeSequene(this.reorder);
-          this.expect = null;
           return;
         }
         return;
@@ -217,9 +247,7 @@
       var values = line.split(";");
       if (values.length < 2)
         return;
-      if (!this.expect)
-        this.expect = { levels: this.levels, reorder: this.reorder };
-      this.tests.push(new BidiTest(this.expect, values[0], parseInt(values[1])));
+      this.tests.push(new BidiTest(this.reorder, values[0], parseInt(values[1])));
     };
     return ctor;
   })();
