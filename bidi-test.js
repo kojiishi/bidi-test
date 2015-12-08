@@ -161,7 +161,7 @@
         return "Length differ for " + this.description() + ": " + actual + " but expects " + expect + " (" + this.test.reorder + ")";
       for (var i = 0; i < actual.length; i++) {
         if (actual[i] != expect[i])
-          return "[" + i + "] differ for " + this.description() + ": " + actual + " but expects " + expect;
+          return "[" + i + "] differ for " + this.description() + ": " + actual + " but expects " + expect + " (" + this.test.reorder + ")";
       }
       return "Pass: " + this.test.description() + " is " + actual + " (expects "+ expect + ")";
     }
