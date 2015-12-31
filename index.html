@@ -29,7 +29,7 @@
   margin: 0;
 }
 
-#list {
+#details {
   clear: both;
 }
 
@@ -37,6 +37,7 @@
   text-align: right;
 }
 </style>
+<body>
 <div id="intro">
   <h1>Bidi-Test</h1>
   <p>This page tests Unicode Bidirectional Algorithm
@@ -54,107 +55,135 @@
     <li>Tests with different length of expected and actual are inconclusive.
   </ol>
   <div id=summary>
-    <div id=statuspanel></div>
-    <progress id=progress></progress>
-    <table id=results>
-      <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
-      <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
-      <tr><td>Pass</td><td id=passpanel class=num></td></tr>
-      <tr><td>Fail</td><td id=failpanel class=num></td></tr>
-      <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
-      <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
-    </table>
+    <div id=runpanel>
+      <input type=button value=Run onclick="run()">
+    </div>
+    <div id=runningpanel>
+      <div id=statuspanel></div>
+      <progress id=progress></progress>
+      <table id=results>
+        <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
+        <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
+        <tr><td>Pass</td><td id=passpanel class=num></td></tr>
+        <tr><td>Fail</td><td id=failpanel class=num></td></tr>
+        <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
+        <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
+      </table>
+    </div>
   </div>
   <ul id=links>
     <li><a href="https://github.com/kojiishi/bidi-test/">github</a>
   </ul>
 </div>
-<div id=list>
-  <details>
-    <summary>Fail</summary>
-    <ol id="faillist"></ol>
-  </details>
-  <details>
-    <summary>Ignore</summary>
-    <ol id="ignorelist"></ol>
-  </details>
-  <details>
-    <summary>Inconclusive</summary>
-    <ol id="inconclusivelist"></ol>
-  </details>
+<div id=details>
 </div>
 <div id=container></div>
 <script>
 'use strict';
 
-var runner = new BidiTestRunner;
-var fails = [], ignores = [], inconclusives = [];
-runner.onFail = function (test) { fails.push(test); };
-runner.onIgnore = function (test) { ignores.push(test); };
-runner.onInconclusive = function (test) { inconclusives.push(test); };
-
-phase("Loading tests...");
-runner.loadUrl('BidiTest.txt', function (tests) {
-  loadedpanel.textContent = tests.length;
-  progress.max = tests.length;
-  progress.value = 0;
-  phase("Testing...", function () {
-    createTests(tests);
-  });
-});
-
-function createTests(tests) {
-  var block = document.createElement("div");
-  container.appendChild(block);
-  runner.create(tests.splice(0, 1000), block);
-  progress.value = progress.max - tests.length;
-  ignoredpanel.textContent = ignores.length;
-
-  //phase("Testing...", function () {
-    runTestsInContainer(block, tests);
-  //);
-}
-
-function runTestsInContainer(container, remaining) {
-  runner.run(container.children);
-  container.parentNode.removeChild(container);
-  passpanel.textContent = runner.pass;
-  failpanel.textContent = fails.length;
-  inconcolusivepanel.textContent = inconclusives.length;
-
-  if (remaining.length) {
-    phase("Testing...", function () {
-      createTests(remaining);
-    });
+var isRunning = false;
+function run() {
+  if (isRunning)
     return;
+  isRunning = true;
+  runpanel.style.display = "none";
+
+  var runner = new BidiTestRunner;
+  var fails = [], ignores = [], inconclusives = [];
+  runner.onFail = function (test) { fails.push(test); };
+  runner.onIgnore = function (test) { ignores.push(test); };
+  runner.onInconclusive = function (test) { inconclusives.push(test); };
+
+  phase("Loading tests...");
+  runner.loadUrl('BidiTest.txt', function (tests) {
+    loadedpanel.textContent = tests.length;
+    progress.max = tests.length;
+    progress.value = 0;
+    phase("Testing...", function () {
+      createTests(tests);
+    });
+  });
+
+  function createTests(tests) {
+    var block = document.createElement("div");
+    container.appendChild(block);
+    runner.create(tests.splice(0, 1000), block);
+    progress.value = progress.max - tests.length;
+    ignoredpanel.textContent = ignores.length;
+
+    //phase("Testing...", function () {
+      runTestsInContainer(block, tests);
+    //);
   }
 
-  phase("Creating result lists...", function () {
-    addResultsToList();
-    phase("Completed");
-  });
-}
+  function runTestsInContainer(container, remaining) {
+    runner.run(container.children);
+    container.parentNode.removeChild(container);
+    passpanel.textContent = runner.pass;
+    failpanel.textContent = fails.length;
+    inconcolusivepanel.textContent = inconclusives.length;
+
+    if (remaining.length) {
+      phase("Testing...", function () {
+        createTests(remaining);
+      });
+      return;
+    }
+
+    phase("Creating result lists...", function () {
+      addResultDetails();
+      runpanel.style.display = "";
+      isRunning = false;
+      phase("Completed");
+    });
+  }
 
 
-function addResultsToList() {
-  function add(list, tests) {
-    for (var test of tests) {
+  function addResultDetails() {
+    var list = document.createElement("ul");
+    addResultDetailsToItem(list, "Failures", fails);
+    addResultDetailsToItem(list, "Ignored", ignores);
+    addResultDetailsToItem(list, "inconclusives", inconclusives);
+    details.appendChild(list);
+
+    function addResultDetailsToItem(list, title, tests) {
+      if (!tests.length)
+        return;
+      title += " (" + tests.length + ") ";
       var item = document.createElement("li");
-      item.textContent = test.result();
+      item.appendChild(document.createTextNode(title));
+      var show = document.createElement("input");
+      show.type = "button";
+      show.value = "Show...";
+      show.onclick = showDetails;
+      item.appendChild(show);
+      item.tests = tests;
       list.appendChild(item);
     }
+
+    function showDetails(e) {
+      var button = e.target;
+      var parent = button.parentNode;
+      var tests = parent.tests;
+      var list = document.createElement("ol");
+      for (var test of tests) {
+        var item = document.createElement("li");
+        item.textContent = test.result();
+        list.appendChild(item);
+      }
+      parent.appendChild(list);
+      button.parentNode.removeChild(button);
+    }
   }
-  add(faillist, fails);
-  add(ignorelist, ignores);
-  add(inconclusivelist, inconclusives);
-}
 
-function phase(text, func) {
-  //console.log(text);
-  statuspanel.textContent = text;
-  timepanel.textContent = Math.round(runner.elapsed() / 1000);
+  function phase(text, func) {
+    //console.log(text);
+    statuspanel.textContent = text;
+    timepanel.textContent = Math.round(runner.elapsed() / 1000);
 
-  if (func)
-    setTimeout(func, 10);
+    if (func)
+      setTimeout(func, 10);
+  }
 }
 </script>
+</body>
