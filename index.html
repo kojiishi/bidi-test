@@ -58,18 +58,18 @@
     <div id=runpanel>
       <input type=button value=Run onclick="run()">
     </div>
-    <div id=runningpanel>
+    <div id=runningpanel style="display: none">
       <div id=statuspanel></div>
       <progress id=progress></progress>
-      <table id=results>
-        <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
-        <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
-        <tr><td>Pass</td><td id=passpanel class=num></td></tr>
-        <tr><td>Fail</td><td id=failpanel class=num></td></tr>
-        <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
-        <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
-      </table>
     </div>
+    <table id=results>
+      <tr><td>Elapsed</td><td id=timepanel class=num></td></tr>
+      <tr><td>Loadded</td><td id=loadedpanel class=num></td></tr>
+      <tr><td>Pass</td><td id=passpanel class=num></td></tr>
+      <tr><td>Fail</td><td id=failpanel class=num></td></tr>
+      <tr><td>Ignored</td><td id=ignoredpanel class=num></td></tr>
+      <tr><td>Inconclusive</td><td id=inconcolusivepanel class=num></td></tr>
+    </table>
   </div>
   <ul id=links>
     <li><a href="https://github.com/kojiishi/bidi-test/">github</a>
@@ -81,15 +81,13 @@
 <script>
 'use strict';
 
-var isRunning = false;
+var runner, fails, ignores, inconclusives;
 function run() {
-  if (isRunning)
+  if (!setIsRunning(true))
     return;
-  isRunning = true;
-  runpanel.style.display = "none";
 
-  var runner = new BidiTestRunner;
-  var fails = [], ignores = [], inconclusives = [];
+  runner = new BidiTestRunner;
+  fails = [], ignores = [], inconclusives = [];
   runner.onFail = function (test) { fails.push(test); };
   runner.onIgnore = function (test) { ignores.push(test); };
   runner.onInconclusive = function (test) { inconclusives.push(test); };
@@ -103,87 +101,95 @@ function run() {
       createTests(tests);
     });
   });
+}
 
-  function createTests(tests) {
-    var block = document.createElement("div");
-    container.appendChild(block);
-    runner.create(tests.splice(0, 1000), block);
-    progress.value = progress.max - tests.length;
-    ignoredpanel.textContent = ignores.length;
+var isRunning = false;
+function setIsRunning(value) {
+  if (isRunning == value)
+    return false;
+  isRunning = value;
+  runpanel.style.display = value ? "none" : "";
+  runningpanel.style.display = value ? "" : "none";
+  return true;
+}
 
-    //phase("Testing...", function () {
-      runTestsInContainer(block, tests);
-    //);
-  }
+function createTests(tests) {
+  var block = document.createElement("div");
+  container.appendChild(block);
+  runner.create(tests.splice(0, 1000), block);
+  progress.value = progress.max - tests.length;
+  ignoredpanel.textContent = ignores.length;
+  //phase("Testing...", function () {
+    runTestsInContainer(block, tests);
+  //);
+}
 
-  function runTestsInContainer(container, remaining) {
-    runner.run(container.children);
-    container.parentNode.removeChild(container);
-    passpanel.textContent = runner.pass;
-    failpanel.textContent = fails.length;
-    inconcolusivepanel.textContent = inconclusives.length;
+function runTestsInContainer(container, remaining) {
+  runner.run(container.children);
+  container.parentNode.removeChild(container);
+  passpanel.textContent = runner.pass;
+  failpanel.textContent = fails.length;
+  inconcolusivepanel.textContent = inconclusives.length;
 
-    if (remaining.length) {
-      phase("Testing...", function () {
-        createTests(remaining);
-      });
-      return;
-    }
-
-    phase("Creating result lists...", function () {
-      addResultDetails();
-      runpanel.style.display = "";
-      isRunning = false;
-      phase("Completed");
+  if (remaining.length) {
+    phase("Testing...", function () {
+      createTests(remaining);
     });
+    return;
   }
 
+  phase("Creating result lists...", function () {
+    addResultDetails();
+    setIsRunning(false);
+    phase("Completed");
+  });
+}
 
-  function addResultDetails() {
-    var list = document.createElement("ul");
-    addResultDetailsToItem(list, "Failures", fails);
-    addResultDetailsToItem(list, "Ignored", ignores);
-    addResultDetailsToItem(list, "inconclusives", inconclusives);
-    details.appendChild(list);
 
-    function addResultDetailsToItem(list, title, tests) {
-      if (!tests.length)
-        return;
-      title += " (" + tests.length + ") ";
+function addResultDetails() {
+  var list = document.createElement("ul");
+  addResultDetailsToItem(list, "Failures", fails);
+  addResultDetailsToItem(list, "Ignored", ignores);
+  addResultDetailsToItem(list, "inconclusives", inconclusives);
+  details.appendChild(list);
+
+  function addResultDetailsToItem(list, title, tests) {
+    if (!tests.length)
+      return;
+    title += " (" + tests.length + ") ";
+    var item = document.createElement("li");
+    item.appendChild(document.createTextNode(title));
+    var show = document.createElement("input");
+    show.type = "button";
+    show.value = "Show...";
+    show.onclick = showDetails;
+    item.appendChild(show);
+    item.tests = tests;
+    list.appendChild(item);
+  }
+
+  function showDetails(e) {
+    var button = e.target;
+    var parent = button.parentNode;
+    var tests = parent.tests;
+    var list = document.createElement("ol");
+    for (var test of tests) {
       var item = document.createElement("li");
-      item.appendChild(document.createTextNode(title));
-      var show = document.createElement("input");
-      show.type = "button";
-      show.value = "Show...";
-      show.onclick = showDetails;
-      item.appendChild(show);
-      item.tests = tests;
+      item.textContent = test.result();
       list.appendChild(item);
     }
-
-    function showDetails(e) {
-      var button = e.target;
-      var parent = button.parentNode;
-      var tests = parent.tests;
-      var list = document.createElement("ol");
-      for (var test of tests) {
-        var item = document.createElement("li");
-        item.textContent = test.result();
-        list.appendChild(item);
-      }
-      parent.appendChild(list);
-      button.parentNode.removeChild(button);
-    }
+    parent.appendChild(list);
+    button.parentNode.removeChild(button);
   }
+}
 
-  function phase(text, func) {
-    //console.log(text);
-    statuspanel.textContent = text;
-    timepanel.textContent = Math.round(runner.elapsed() / 1000);
+function phase(text, func) {
+  //console.log(text);
+  statuspanel.textContent = text;
+  timepanel.textContent = Math.round(runner.elapsed() / 1000);
 
-    if (func)
-      setTimeout(func, 10);
-  }
+  if (func)
+    setTimeout(func, 10);
 }
 </script>
 </body>
